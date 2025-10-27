@@ -158,7 +158,7 @@ export default function CreateEventModal({ onClose, onCreateEvent, isLoading }: 
               {formData.eventType === 'paid' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Ticket Price (TXDC) *
+                    Ticket Price (PUSH) *
                   </label>
                   <input
                     type="number"
@@ -276,7 +276,7 @@ export default function CreateEventModal({ onClose, onCreateEvent, isLoading }: 
             {/* Max Resale Price */}
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
-                Max Resale Price (TXDC)
+                Max Resale Price (PUSH)
               </label>
               <input
                 type="number"

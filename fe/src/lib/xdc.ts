@@ -1,40 +1,34 @@
 // src/lib/xdc.ts
-// Helper utilities for interacting with the XDC network using xdc3 (Web3-compatible)
-// Usage is server-side only to avoid bundling Node polyfills in the client.
-
-// We import with require to avoid potential ESM/CJS interop issues in Next server runtime.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const XDC3 = require('xdc3');
+// Repointed to Push Testnet Donut using ethers JsonRpcProvider
+import { JsonRpcProvider } from 'ethers';
 
 export type XdcConnectionInfo = {
   rpcUrl: string;
   chainId: number;
-  network: 'mainnet' | 'apothem';
+  network: 'push-testnet';
 };
 
 export function getXdcConnection(): XdcConnectionInfo {
-  const envUrl = process.env.XDC_RPC_URL?.trim();
-  const chainIdEnv = process.env.XDC_CHAIN_ID?.trim();
+  const envUrl = (process.env.NEXT_PUBLIC_RPC_URL || process.env.PUSH_TESTNET_RPC || '').trim();
+  const chainIdEnv = (process.env.NEXT_PUBLIC_CHAIN_ID || '').trim();
 
-  // Defaults to Apothem testnet if not provided
-  const defaultUrl = 'https://erpc.apothem.network';
+  const defaultUrl = 'https://evm.rpc-testnet-donut-node1.push.org';
   const rpcUrl = envUrl && envUrl.length > 0 ? envUrl : defaultUrl;
 
-  // chainId 50 = mainnet, 51 = apothem
-  const chainId = chainIdEnv ? Number(chainIdEnv) : 51;
-  const network = chainId === 50 ? 'mainnet' : 'apothem';
+  const chainId = chainIdEnv ? Number(chainIdEnv) : 42101;
+  const network = 'push-testnet' as const;
 
   return { rpcUrl, chainId, network };
 }
 
 export function getXdcWeb3() {
   const { rpcUrl } = getXdcConnection();
-  const web3 = new XDC3(rpcUrl);
-  return web3;
+  const provider = new JsonRpcProvider(rpcUrl);
+  return provider;
 }
 
 export async function getCurrentBlockNumber(): Promise<number> {
-  const web3 = getXdcWeb3();
-  const blockNumber = await web3.eth.getBlockNumber();
+  const provider = getXdcWeb3();
+  const blockNumber = await provider.getBlockNumber();
   return Number(blockNumber);
 }

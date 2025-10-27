@@ -6,8 +6,8 @@
     "compile": "hardhat compile",
     "clean": "hardhat clean",
     "test": "echo \"No tests yet\"",
-    "deploy:XDC": "hardhat ignition deploy ignition/modules/Ticket.ts --network xdcApothem",
-    "deploy:xdc": "hardhat ignition deploy ignition/modules/Ticket.ts --network xdcApothem"
+    "deploy:PUSH": "hardhat ignition deploy ignition/modules/Ticket.ts --network pushTestnetDonut",
+    "deploy:push": "hardhat ignition deploy ignition/modules/Ticket.ts --network pushTestnetDonut"
   },
   "author": "",
   "license": "ISC",

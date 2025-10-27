@@ -45,12 +45,12 @@ const config: HardhatUserConfig = {
       url: configVariable("SEPOLIA_RPC_URL"),
       accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
     },
-    xdcApothem: {
+    pushTestnetDonut: {
       type: "http",
       chainType: "l1",
-      // XDC Apothem testnet RPC
-      url: configVariable("XDC_TESTNET_RPC"),
-      chainId: 51,
+      // Push Testnet Donut RPC
+      url: configVariable("PUSH_TESTNET_RPC"),
+      chainId: 42101,
       accounts: [configVariable("PRIVATE_KEY")],
       // Let the provider suggest gas price; override if needed
     },

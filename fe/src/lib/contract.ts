@@ -6,11 +6,11 @@ export const CONTRACT_CONFIG = {
   // Note: `useBlockchainIntegration` can read NEXT_PUBLIC_CONTRACT_ADDRESS at runtime.
   // This fallback is used by utilities/components that import CONTRACT_CONFIG directly.
   address: '0x6937de2Cd1Ad91C4EB7e86AC22ad92c5B89d678B',
-  chainId: 51, // XDC Apothem Testnet
+  chainId: 42101, // Push Testnet Donut
 };
 
-// Default public RPC URL for XDC Apothem Testnet (can be overridden via NEXT_PUBLIC_RPC_URL)
-export const DEFAULT_RPC_URL = 'https://erpc.apothem.network';
+// Default public RPC URL for Push Testnet Donut (can be overridden via NEXT_PUBLIC_RPC_URL)
+export const DEFAULT_RPC_URL = 'https://evm.rpc-testnet-donut-node1.push.org';
 
 // Utility functions for contract interactions
 export const formatEventFromContract = (eventData: any[]): Event => {

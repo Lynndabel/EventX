@@ -66,7 +66,7 @@ export default function EventCard({ event, onRegister, isConnected }: EventCardP
         <div className="flex justify-between items-center mb-4">
           <div>
             <span className="text-2xl font-bold text-brand">
-              {formatPrice(event.price)} TXDC
+              {formatPrice(event.price)} PUSH
             </span>
           </div>
           <div className="text-right">

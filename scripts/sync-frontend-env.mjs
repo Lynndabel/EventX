@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /*
-Sync fe/.env.local with latest XDC Apothem deployment
-- Reads smart-contract/ignition/deployments/chain-51/deployed_addresses.json
-- Falls back to deployments/ticket-xdc-apothem.json if present
+Sync fe/.env.local with latest Push Testnet Donut deployment
+- Reads smart-contract/ignition/deployments/chain-42101/deployed_addresses.json
+- Falls back to deployments/ticket-push-testnet.json if present
 - Writes/updates fe/.env.local with:
   NEXT_PUBLIC_CONTRACT_ADDRESS
-  NEXT_PUBLIC_CHAIN_ID=51
-  NEXT_PUBLIC_RPC_URL=https://erpc.apothem.network
+  NEXT_PUBLIC_CHAIN_ID=42101
+  NEXT_PUBLIC_RPC_URL=https://evm.rpc-testnet-donut-node1.push.org
 */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
@@ -16,8 +16,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const repoRoot = dirname(__dirname);
-const ignitionPath = join(repoRoot, 'smart-contract', 'ignition', 'deployments', 'chain-51', 'deployed_addresses.json');
-const altDeployPath = join(repoRoot, 'smart-contract', 'deployments', 'ticket-xdc-apothem.json');
+const ignitionPath = join(repoRoot, 'smart-contract', 'ignition', 'deployments', 'chain-42101', 'deployed_addresses.json');
+const altDeployPath = join(repoRoot, 'smart-contract', 'deployments', 'ticket-push-testnet.json');
 const envPath = join(repoRoot, 'fe', '.env.local');
 
 function readAddress() {
@@ -56,8 +56,8 @@ function main() {
   }
 
   upsertEnv(lines, 'NEXT_PUBLIC_CONTRACT_ADDRESS', address);
-  upsertEnv(lines, 'NEXT_PUBLIC_CHAIN_ID', '51');
-  upsertEnv(lines, 'NEXT_PUBLIC_RPC_URL', 'https://erpc.apothem.network');
+  upsertEnv(lines, 'NEXT_PUBLIC_CHAIN_ID', '42101');
+  upsertEnv(lines, 'NEXT_PUBLIC_RPC_URL', 'https://evm.rpc-testnet-donut-node1.push.org');
 
   // Ensure fe directory exists (it should)
   try { mkdirSync(dirname(envPath), { recursive: true }); } catch {}
@@ -65,8 +65,8 @@ function main() {
 
   console.log('Updated fe/.env.local with:');
   console.log('  NEXT_PUBLIC_CONTRACT_ADDRESS=', address);
-  console.log('  NEXT_PUBLIC_CHAIN_ID=51');
-  console.log('  NEXT_PUBLIC_RPC_URL=https://erpc.apothem.network');
+  console.log('  NEXT_PUBLIC_CHAIN_ID=42101');
+  console.log('  NEXT_PUBLIC_RPC_URL=https://evm.rpc-testnet-donut-node1.push.org');
 }
 
 main();

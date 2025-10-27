@@ -3,10 +3,10 @@ import { writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 
 async function main() {
-  console.log("Deploying Ticket contract to XDC Apothem Testnet...");
+  console.log("Deploying Ticket contract to Push Testnet Donut...");
   
   const { viem } = await network.connect({
-    network: "xdcApothem",
+    network: "pushTestnetDonut",
     chainType: "l1",
   });
 
@@ -41,8 +41,8 @@ async function main() {
 
   // Save deployment info
   const deploymentInfo = {
-    network: "xdc-apothem",
-    chainId: 51,
+    network: "push-testnet-donut",
+    chainId: 42101,
     deployer: deployerClient.account.address,
     deploymentTime: new Date().toISOString(),
     contracts: {
@@ -63,13 +63,13 @@ async function main() {
     // Directory might already exist
   }
 
-  const deploymentPath = join(deploymentsDir, "ticket-multi-organizer-xdc.json");
+  const deploymentPath = join(deploymentsDir, "ticket-multi-organizer-push.json");
   writeFileSync(deploymentPath, JSON.stringify(deploymentInfo, null, 2));
   console.log("Deployment info saved to", deploymentPath);
   
   console.log("\n=== Deployment Summary ===");
-  console.log("Network: XDC Apothem Testnet");
-  console.log("Chain ID: 51");
+  console.log("Network: Push Testnet Donut");
+  console.log("Chain ID: 42101");
   console.log("Deployer:", deployerClient.account.address);
   console.log("Ticket Contract:", ticketAddress);
   console.log("Name: EventX Tickets");

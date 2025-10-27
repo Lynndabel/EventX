@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { PushUI, usePushWalletContext } from '@pushchain/ui-kit';
 import { ethers } from 'ethers';
 import { TICKET_CONTRACT_ABI } from '@/lib/contract-abi';
 import { CONTRACT_CONFIG, DEFAULT_RPC_URL, formatEventFromContract } from '@/lib/contract';
@@ -33,34 +34,64 @@ export const useBlockchainIntegration = (): UseBlockchainIntegrationReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if wallet is connected to the correct network
-  const checkNetwork = useCallback(async () => {
+  // Access wallet connection status from Push UI Kit (optional signal)
+  const { connectionStatus } = usePushWalletContext();
+
+  // Attempt to switch/add to Push Testnet (42101) if not already on it
+  const ensurePushChain = useCallback(async () => {
+    const expectedChainId = CONTRACT_CONFIG.chainId; // 42101
+    const hexChainId = '0x' + expectedChainId.toString(16);
+
     if (!window.ethereum) {
-      throw new Error('MetaMask is not installed');
+      throw new Error('No EVM wallet provider found');
     }
 
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const network = await provider.getNetwork();
-    const expectedChainId = CONTRACT_CONFIG.chainId;
-    
-    if (Number(network.chainId) !== expectedChainId) {
-      throw new Error(`Wrong network! Please switch to XDC Apothem Testnet (Chain ID: ${expectedChainId}). Currently connected to Chain ID: ${network.chainId}`);
+    const current = await provider.getNetwork();
+    if (Number(current.chainId) === expectedChainId) return;
+
+    try {
+      await window.ethereum.request?.({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: hexChainId }],
+      });
+      return;
+    } catch (switchErr: any) {
+      // If the chain is not added to the wallet, try to add it
+      if (switchErr?.code === 4902) {
+        try {
+          await window.ethereum.request?.({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: hexChainId,
+              chainName: 'Push Testnet Donut',
+              nativeCurrency: { name: 'PUSH', symbol: 'PUSH', decimals: 18 },
+              rpcUrls: [process.env.NEXT_PUBLIC_RPC_URL || DEFAULT_RPC_URL],
+              blockExplorerUrls: ['https://donut.push.network'],
+            }],
+          });
+          return;
+        } catch (addErr) {
+          throw new Error('Please add/switch to Push Testnet Donut (42101) in your wallet');
+        }
+      }
+      throw new Error('Please switch to Push Testnet Donut (42101) in your wallet');
     }
   }, []);
 
   // Signer-based contract (requires wallet) for write operations
   const getContract = useCallback(async () => {
     if (!window.ethereum) {
-      throw new Error('MetaMask is not installed');
+      throw new Error('No EVM wallet provider found');
     }
 
-    // Check network before proceeding
-    await checkNetwork();
+    // Enforce/switch to Push chain before any write
+    await ensurePushChain();
 
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     return new ethers.Contract(CONTRACT_ADDRESS, TICKET_CONTRACT_ABI, signer);
-  }, [checkNetwork]);
+  }, [ensurePushChain]);
 
   // Read-only contract via public RPC so UI works without wallet connection
   const getReadContract = useCallback(() => {
@@ -348,8 +379,30 @@ export const useBlockchainIntegration = (): UseBlockchainIntegrationReturn => {
       return { success: true, tokenId: NaN };
     } catch (err: any) {
       console.error('Error minting ticket:', err);
-      setError(err.message || 'Failed to purchase ticket');
-      return { success: false };
+      // Attempt cross-chain server settlement if wallet can't switch/add chain or write is blocked
+      try {
+        const res = await fetch('/api/settle/mint', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            eventId,
+            seatNumber,
+            priceWei: ethers.parseEther(price).toString(),
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const tokenId = Number(data?.tokenId);
+          return { success: true, tokenId: Number.isFinite(tokenId) ? tokenId : NaN };
+        }
+        const e = await res.json().catch(() => ({}));
+        setError(e?.error || 'Server settlement failed');
+        return { success: false };
+      } catch (serverErr: any) {
+        console.error('Server settlement error:', serverErr);
+        setError(err.message || 'Failed to purchase ticket');
+        return { success: false };
+      }
     } finally {
       setIsLoading(false);
     }
