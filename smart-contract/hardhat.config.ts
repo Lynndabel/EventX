@@ -1,8 +1,12 @@
 import type { HardhatUserConfig } from "hardhat/config";
-import "dotenv/config";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { config as dotenvConfig } from "dotenv";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenvConfig({ path: path.resolve(__dirname, ".env") });
 
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
-import { configVariable } from "hardhat/config";
 
 const config: HardhatUserConfig = {
   plugins: [hardhatToolboxViemPlugin],
@@ -15,6 +19,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 200,
           },
+          evmVersion: "paris",
           viaIR: true,
         },
       },
@@ -25,6 +30,7 @@ const config: HardhatUserConfig = {
             enabled: true,
             runs: 200,
           },
+          evmVersion: "paris",
           viaIR: true,
         },
       },
@@ -39,19 +45,23 @@ const config: HardhatUserConfig = {
       type: "edr-simulated",
       chainType: "op",
     },
-    sepolia: {
-      type: "http",
-      chainType: "l1",
-      url: configVariable("SEPOLIA_RPC_URL"),
-      accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
-    },
     pushTestnetDonut: {
       type: "http",
       chainType: "l1",
       // Push Testnet Donut RPC
-      url: configVariable("PUSH_TESTNET_RPC"),
+      url: (process.env.PUSH_TESTNET_RPC as string) || "https://evm.rpc-testnet-donut-node1.push.org",
       chainId: 42101,
-      accounts: [configVariable("PRIVATE_KEY")],
+      accounts: ((process.env.PRIVATE_KEY || "").startsWith("0x")
+        ? process.env.PRIVATE_KEY
+        : process.env.PRIVATE_KEY
+        ? `0x${process.env.PRIVATE_KEY}`
+        : "")
+        ? [
+            ((process.env.PRIVATE_KEY || "").startsWith("0x")
+              ? process.env.PRIVATE_KEY!
+              : `0x${process.env.PRIVATE_KEY}`) as string,
+          ]
+        : [],
       // Let the provider suggest gas price; override if needed
     },
   },

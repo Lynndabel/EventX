@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { PushUI, usePushWalletContext } from '@pushchain/ui-kit';
+import { PushUI, usePushWalletContext, usePushChainClient } from '@pushchain/ui-kit';
 import { ethers } from 'ethers';
 import { TICKET_CONTRACT_ABI } from '@/lib/contract-abi';
 import { CONTRACT_CONFIG, DEFAULT_RPC_URL, formatEventFromContract } from '@/lib/contract';
@@ -34,24 +34,42 @@ export const useBlockchainIntegration = (): UseBlockchainIntegrationReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Access wallet connection status from Push UI Kit (optional signal)
+  // Access wallet connection status from Push UI Kit
   const { connectionStatus } = usePushWalletContext();
+  const { pushChainClient } = usePushChainClient();
 
   // Attempt to switch/add to Push Testnet (42101) if not already on it
-  const ensurePushChain = useCallback(async () => {
+  const ensurePushChain = useCallback(async (evmProvider: any, isPushWallet: boolean) => {
     const expectedChainId = CONTRACT_CONFIG.chainId; // 42101
     const hexChainId = '0x' + expectedChainId.toString(16);
 
-    if (!window.ethereum) {
+    if (!evmProvider) {
       throw new Error('No EVM wallet provider found');
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const current = await provider.getNetwork();
-    if (Number(current.chainId) === expectedChainId) return;
+    // For traditional wallets (not Push), request accounts first
+    if (!isPushWallet && evmProvider.request) {
+      try {
+        await evmProvider.request({ method: 'eth_requestAccounts' });
+      } catch (err: any) {
+        if (err?.code === 4001) {
+          throw new Error('Please connect your wallet to continue');
+        }
+      }
+    }
+
+    const provider = new ethers.BrowserProvider(evmProvider);
+    
+    try {
+      const current = await provider.getNetwork();
+      if (Number(current.chainId) === expectedChainId) return;
+    } catch (err) {
+      // If we can't get network, try to switch anyway
+      console.warn('Could not get current network, attempting to switch:', err);
+    }
 
     try {
-      await window.ethereum.request?.({
+      await evmProvider.request?.({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: hexChainId }],
       });
@@ -60,7 +78,7 @@ export const useBlockchainIntegration = (): UseBlockchainIntegrationReturn => {
       // If the chain is not added to the wallet, try to add it
       if (switchErr?.code === 4902) {
         try {
-          await window.ethereum.request?.({
+          await evmProvider.request?.({
             method: 'wallet_addEthereumChain',
             params: [{
               chainId: hexChainId,
@@ -81,17 +99,21 @@ export const useBlockchainIntegration = (): UseBlockchainIntegrationReturn => {
 
   // Signer-based contract (requires wallet) for write operations
   const getContract = useCallback(async () => {
-    if (!window.ethereum) {
-      throw new Error('No EVM wallet provider found');
+    // Try Push wallet first, fallback to window.ethereum
+    const isPushWallet = !!pushChainClient?.evm?.provider;
+    const evmProvider = pushChainClient?.evm?.provider || window.ethereum;
+    
+    if (!evmProvider) {
+      throw new Error('No EVM wallet provider found. Please connect your wallet.');
     }
 
     // Enforce/switch to Push chain before any write
-    await ensurePushChain();
+    await ensurePushChain(evmProvider, isPushWallet);
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new ethers.BrowserProvider(evmProvider);
     const signer = await provider.getSigner();
     return new ethers.Contract(CONTRACT_ADDRESS, TICKET_CONTRACT_ABI, signer);
-  }, [ensurePushChain]);
+  }, [ensurePushChain, pushChainClient]);
 
   // Read-only contract via public RPC so UI works without wallet connection
   const getReadContract = useCallback(() => {

@@ -1,24 +1,30 @@
-import { network } from "hardhat";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { config as dotenvConfig } from "dotenv";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenvConfig({ path: path.resolve(__dirname, "../.env") });
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
+import { ethers } from "ethers";
 
 async function main() {
   console.log("Deploying Ticket contract to Push Testnet Donut...");
-  
-  const { viem } = await network.connect({
-    network: "pushTestnetDonut",
-    chainType: "l1",
-  });
 
-  const publicClient = await viem.getPublicClient();
-  const [deployerClient] = await viem.getWalletClients();
+  const rpcUrl = process.env.PUSH_TESTNET_RPC || "https://evm.rpc-testnet-donut-node1.push.org";
+  const pkRaw = process.env.PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY || "";
+  const privateKey = pkRaw.startsWith("0x") ? pkRaw : "0x" + pkRaw;
+  if (!privateKey || privateKey === "0x") {
+    throw new Error("❌ PRIVATE_KEY is missing in environment. Set PRIVATE_KEY (or DEPLOYER_PRIVATE_KEY) in smart-contract/.env");
+  }
+
+  const provider = new ethers.JsonRpcProvider(rpcUrl, { chainId: 42101, name: "push-testnet-donut" });
+  const wallet = new ethers.Wallet(privateKey, provider);
   
-  console.log("Deploying contracts with the account:", deployerClient.account.address);
+  console.log("Deploying contracts with the account:", wallet.address);
   
-  const balance = await publicClient.getBalance({
-    address: deployerClient.account.address,
-  });
-  console.log("Account balance:", balance.toString());
+  const balance = await provider.getBalance(wallet.address);
+  console.log("Account balance:", ethers.formatEther(balance), "PUSH");
 
   if (balance === 0n) {
     throw new Error("❌ Insufficient balance for deployment. Please fund your account.");
@@ -31,32 +37,25 @@ async function main() {
   const hre = await import("hardhat");
   const ticketArtifact = await hre.artifacts.readArtifact("Ticket");
   
-  const ticketHash = await deployerClient.deployContract({
-    abi: ticketArtifact.abi,
-    bytecode: ticketArtifact.bytecode as `0x${string}`,
-    account: deployerClient.account,
-    args: ["EventX Tickets", "EVTX"],
-  });
+  const factory = new ethers.ContractFactory(ticketArtifact.abi, ticketArtifact.bytecode, wallet);
+  const contract = await factory.deploy("EventX Tickets", "EVTX");
+  await contract.waitForDeployment();
   
-  const ticketReceipt = await publicClient.waitForTransactionReceipt({
-    hash: ticketHash,
-  });
-  const ticketAddress = ticketReceipt.contractAddress;
+  const ticketAddress = await contract.getAddress();
+  const deployTx = contract.deploymentTransaction();
+  const ticketHash = deployTx?.hash || "";
+  
   console.log("Ticket contract deployed to:", ticketAddress);
 
   // Verify contract ownership
-  const owner = await publicClient.readContract({
-    address: ticketAddress!,
-    abi: ticketArtifact.abi,
-    functionName: 'owner'
-  });
+  const owner = await contract.owner();
   console.log("Contract owner:", owner);
 
   // Save deployment info
   const deploymentInfo = {
     network: "push-testnet-donut",
     chainId: 42101,
-    deployer: deployerClient.account.address,
+    deployer: wallet.address,
     deploymentTime: new Date().toISOString(),
     transactionHash: ticketHash,
     contracts: {
@@ -81,7 +80,7 @@ async function main() {
   console.log("\n=== Deployment Summary ===");
   console.log("Network: Push Testnet Donut");
   console.log("Chain ID: 42101");
-  console.log("Deployer:", deployerClient.account.address);
+  console.log("Deployer:", wallet.address);
   console.log("Ticket Contract:", ticketAddress);
   console.log("Contract Owner:", owner);
   console.log("Transaction Hash:", ticketHash);

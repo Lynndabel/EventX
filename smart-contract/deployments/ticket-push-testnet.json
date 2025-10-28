@@ -1,0 +1,17 @@
+{
+  "network": "push-testnet-donut",
+  "chainId": 42101,
+  "deployer": "0x3BFbE4E3dCC472E9B1bdFC0c177dE3459Cf769bf",
+  "deploymentTime": "2025-10-28T05:27:46.393Z",
+  "transactionHash": "0x45d65ecd018188288268113cc226e30f5e67c81fc6e91e6e06c381573360d7d6",
+  "contracts": {
+    "Ticket": {
+      "address": "0x3A71981Ece2aE0CE6F880Bb57D5B5B2c8C95C918",
+      "constructorArgs": [
+        "EventX Tickets",
+        "EVTX"
+      ],
+      "owner": "0x3BFbE4E3dCC472E9B1bdFC0c177dE3459Cf769bf"
+    }
+  }
+}

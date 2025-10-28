@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import OrganizerDashboard from '@/components/OrganizerDashboard';
 import CreateEventModal from '@/components/CreateEventModal';
 import { useBlockchainIntegration } from '@/hooks/useBlockchainIntegration';
 import { Event } from '@/types/contract';
 import { addToast } from '@/lib/toast';
+import { usePushWalletContext, usePushChainClient, PushUI } from '@pushchain/ui-kit';
 
 interface CreateEventData {
   title: string;
@@ -19,10 +20,17 @@ interface CreateEventData {
 
 export default function OrganizerPage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [userAddress, setUserAddress] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const { connectionStatus } = usePushWalletContext();
+  const { pushChainClient } = usePushChainClient();
+
+  const userAddress = useMemo(() => {
+    return pushChainClient?.universal?.account || '';
+  }, [pushChainClient]);
+
+  const isConnected = connectionStatus === PushUI.CONSTANTS.CONNECTION.STATUS.CONNECTED && !!userAddress;
 
   const { createEvent, getEventDetails, getTotalOccassions, error: blockchainError } = useBlockchainIntegration();
 
@@ -59,40 +67,6 @@ export default function OrganizerPage() {
     : [];
 
   // Detect connection via window.ethereum (no button here; header handles connect UI)
-  type Ethereumish = {
-    request: (args: { method: string }) => Promise<string[]>;
-    on?: (event: string, handler: (accounts: string[]) => void) => void;
-    removeListener?: (event: string, handler: (accounts: string[]) => void) => void;
-  };
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const eth = (window as unknown as { ethereum?: Ethereumish }).ethereum;
-    if (!eth) return;
-
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length > 0) {
-        setUserAddress(accounts[0]);
-        setIsConnected(true);
-      } else {
-        setUserAddress('');
-        setIsConnected(false);
-      }
-    };
-
-    (async () => {
-      try {
-        const accounts = await eth.request({ method: 'eth_accounts' });
-        handleAccountsChanged(accounts);
-      } catch {
-        // ignore
-      }
-    })();
-
-    eth.on?.('accountsChanged', handleAccountsChanged);
-    return () => {
-      eth.removeListener?.('accountsChanged', handleAccountsChanged);
-    };
-  }, []);
 
   const handleCreateEventSubmit = async (eventData: CreateEventData) => {
     setIsLoading(true);

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import WalletConnect from "@/components/WalletConnect";
+import { useEffect, useState, useMemo } from "react";
+import TicketCard from "@/components/TicketCard";
 import { useBlockchainIntegration } from "@/hooks/useBlockchainIntegration";
-import { addToast } from "@/lib/toast";
 import { Event } from "@/types/contract";
+import { addToast } from "@/lib/toast";
+import { usePushWalletContext, usePushChainClient, PushUI } from "@pushchain/ui-kit";
 
 interface OwnedTicket {
   tokenId: number;
@@ -14,10 +15,18 @@ interface OwnedTicket {
 }
 
 export default function MyTicketsPage() {
-  const [walletAddress, setWalletAddress] = useState<string>("");
-  const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tickets, setTickets] = useState<OwnedTicket[]>([]);
+
+  const { connectionStatus } = usePushWalletContext();
+  const { pushChainClient } = usePushChainClient();
+
+  const walletAddress = useMemo(() => {
+    return pushChainClient?.universal?.account || '';
+  }, [pushChainClient]);
+
+  const isConnected = connectionStatus === PushUI.CONSTANTS.CONNECTION.STATUS.CONNECTED && !!walletAddress;
+
   const { getTicketsByOwner, getEventDetails, refundAttendee, getTokenURI } = useBlockchainIntegration();
   const [origin, setOrigin] = useState<string>("");
   const nowSec = Math.floor(Date.now() / 1000);
@@ -166,11 +175,6 @@ export default function MyTicketsPage() {
         win.document.close();
       }
     }
-  };
-
-  const handleConnect = async (address: string) => {
-    setWalletAddress(address);
-    setIsConnected(true);
   };
 
   const loadTickets = async (address: string) => {

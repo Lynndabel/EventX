@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import EventCard from '@/components/EventCard';
-import SeatSelection from '@/components/SeatSelection';
-import WalletConnect from '@/components/WalletConnect';
-import { Event } from '@/types/contract';
+import RegisterModal from '@/components/RegisterModal';
 import { useBlockchainIntegration } from '@/hooks/useBlockchainIntegration';
+import { Event } from '@/types/contract';
+import { mockEvents } from '@/lib/mockData';
+import { usePushWalletContext, usePushChainClient, PushUI } from '@pushchain/ui-kit';
 import { addToast } from '@/lib/toast';
 
 // Events page is read-only for events listing and ticket purchase
@@ -17,12 +18,20 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>(mockEvents);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+
+  const { connectionStatus } = usePushWalletContext();
+  const { pushChainClient } = usePushChainClient();
+
+  const userAddress = useMemo(() => {
+    return pushChainClient?.universal?.account || '';
+  }, [pushChainClient]);
+
+  const isConnected = connectionStatus === PushUI.CONSTANTS.CONNECTION.STATUS.CONNECTED && !!userAddress;
   
   const { mintTicket, getEventDetails, getTotalOccassions, error: blockchainError } = useBlockchainIntegration();
 
   // Load existing events from chain on initial render
-  const reloadEvents = useCallback(async () => {
+  const reloadEvents = async () => {
     const total = await getTotalOccassions();
     const loaded: Event[] = [];
     const imgMapRaw = typeof window !== 'undefined' ? localStorage.getItem('event_images') : null;
@@ -35,7 +44,7 @@ export default function EventsPage() {
       }
     }
     setEvents(loaded);
-  }, [getTotalOccassions, getEventDetails]);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -47,12 +56,6 @@ export default function EventsPage() {
     };
     load();
   }, [reloadEvents]);
-
-  // reloadEvents defined above with useCallback
-
-  const handleWalletConnect = async () => {
-    setIsConnected(true);
-  };
 
   const handleEventRegister = async (eventId: number) => {
     const total = await getTotalOccassions();
