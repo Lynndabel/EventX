@@ -41,9 +41,7 @@ export default function MyTicketsPage() {
   };
 
   const openNFTImage = async (tokenId: number) => {
-    // Open the window synchronously to avoid popup blockers
     const win = typeof window !== 'undefined' ? window.open('about:blank', '_blank') : null;
-    // Write a loading page immediately
     if (win) {
       try {
         win.document.open();
@@ -53,17 +51,14 @@ export default function MyTicketsPage() {
     }
     try {
       const uri = await getTokenURI(tokenId);
-      // tokenURI may be a data:application/json;... with { image: 'data:image/svg+xml;utf8,...' }
       if (uri.startsWith('data:application/json')) {
         const [header, payload] = uri.split(',', 2);
-        // Try base64 first
         const isBase64 = /;base64/i.test(header);
         let jsonStr = '';
         try {
           if (isBase64) {
             jsonStr = typeof atob !== 'undefined' ? atob(payload) : Buffer.from(payload, 'base64').toString('utf-8');
           } else {
-            // Some implementations do not percent-encode. Use payload as-is if decode fails.
             try {
               jsonStr = decodeURIComponent(payload);
             } catch {
@@ -100,10 +95,8 @@ export default function MyTicketsPage() {
             return;
           }
         } catch {
-          // If JSON.parse failed (e.g., image contains unescaped quotes), try to extract image URL heuristically
           const startIdx = jsonStr.indexOf('data:image/svg+xml');
           if (startIdx !== -1) {
-            // Find end of svg by searching for closing tag
             const endTag = '</svg>';
             const endIdx = jsonStr.indexOf(endTag, startIdx);
             if (endIdx !== -1) {
@@ -119,7 +112,6 @@ export default function MyTicketsPage() {
               return;
             }
           }
-          // Try extracting raw <svg> markup
           const svgStart = jsonStr.indexOf('<svg');
           const svgEndTag = '</svg>';
           const svgEnd = svgStart !== -1 ? jsonStr.indexOf(svgEndTag, svgStart) : -1;
@@ -135,7 +127,6 @@ export default function MyTicketsPage() {
             }
             return;
           }
-          // Last resort: open the whole JSON data URL
           if (win) {
             win.location.href = uri;
           } else {
@@ -144,7 +135,6 @@ export default function MyTicketsPage() {
           return;
         }
       }
-      // Fallback: if tokenURI is already an image data URL, open it directly
       if (uri.startsWith('data:image/')) {
         if (win) {
           win.document.open();
@@ -153,7 +143,6 @@ export default function MyTicketsPage() {
         } else window.open(uri, '_blank');
         return;
       }
-      // If tokenURI is raw SVG markup
       if (uri.trim().startsWith('<svg')) {
         if (win) {
           win.document.open();
@@ -165,7 +154,6 @@ export default function MyTicketsPage() {
         }
         return;
       }
-      // Otherwise just open whatever URI it is
       if (win) win.location.href = uri; else window.open(uri, '_blank');
     } catch (e) {
       console.error('Failed to open NFT image', e);
@@ -181,7 +169,6 @@ export default function MyTicketsPage() {
     setLoading(true);
     try {
       const mine = await getTicketsByOwner(address);
-      // Enrich with event details
       const enriched: OwnedTicket[] = [];
       for (const t of mine) {
         const ev = await getEventDetails(t.occasionId);
@@ -209,82 +196,108 @@ export default function MyTicketsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {!isConnected ? (
-          <div className="bg-white rounded-xl shadow p-8 text-center">
-            <h2 className="text-xl font-semibold mb-2 text-gray-900">Connect your wallet</h2>
-            <p className="text-gray-700">Connect to view the tickets you own.</p>
+          <div className="bg-white rounded-lg sm:rounded-xl shadow p-6 sm:p-8 text-center">
+            <div className="text-4xl sm:text-5xl mb-4">🎫</div>
+            <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-900">
+              Connect your wallet
+            </h2>
+            <p className="text-sm sm:text-base text-gray-700">
+              Connect to view the tickets you own.
+            </p>
             <div className="mt-6 inline-block">
               <WalletConnect onConnect={handleConnect} />
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Your Tickets</h2>
-                <p className="text-sm text-gray-700 font-mono">{walletAddress.slice(0,6)}...{walletAddress.slice(-4)}</p>
+          <div className="bg-white rounded-lg sm:rounded-xl shadow p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                  Your Tickets
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-700 font-mono truncate">
+                  {walletAddress.slice(0,6)}...{walletAddress.slice(-4)}
+                </p>
               </div>
               <button
                 onClick={() => loadTickets(walletAddress)}
-                className="px-4 py-2 btn-brand rounded-lg"
+                className="px-4 py-2 btn-brand rounded-lg text-sm font-semibold hover:opacity-90 transition flex-shrink-0"
+                disabled={loading}
               >
                 {loading ? "Refreshing..." : "Refresh"}
               </button>
             </div>
 
             {loading ? (
-              <p className="text-gray-700">Loading your tickets...</p>
+              <div className="text-center py-8 sm:py-12">
+                <div className="inline-block animate-spin h-8 w-8 border-4 border-gray-300 border-t-brand rounded-full mb-3" />
+                <p className="text-sm sm:text-base text-gray-700">Loading your tickets...</p>
+              </div>
             ) : tickets.length === 0 ? (
-              <div className="text-center text-gray-700 py-10">
-                <p>No tickets found for this wallet.</p>
-                <p className="text-sm mt-2 text-gray-700">Purchase a ticket from the Events page and check back here.</p>
+              <div className="text-center text-gray-700 py-8 sm:py-12">
+                <div className="text-4xl sm:text-5xl mb-3">📭</div>
+                <p className="text-sm sm:text-base font-medium">No tickets found for this wallet.</p>
+                <p className="text-xs sm:text-sm mt-2 text-gray-600">
+                  Purchase a ticket from the Events page and check back here.
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                 {tickets.map((t) => (
-                  <div key={t.tokenId} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-semibold text-gray-900">Ticket #{t.tokenId}</h3>
-                      <div className="flex items-center gap-2">
+                  <div key={t.tokenId} className="border border-gray-200 rounded-lg p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start gap-2 mb-3">
+                      <h3 className="font-semibold text-sm sm:text-base text-gray-900">
+                        Ticket #{t.tokenId}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         {t.event && (
                           t.event.canceled ? (
-                            <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">Canceled</span>
+                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Canceled</span>
                           ) : t.event.occurred ? (
-                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Ended</span>
+                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">Ended</span>
                           ) : t.event.eventTimestamp && nowSec > (t.event.eventTimestamp + GRACE_SECONDS) ? (
-                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Refund Available</span>
+                            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded whitespace-nowrap">Refund Available</span>
                           ) : (
-                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Active</span>
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Active</span>
                           )
                         )}
-                        <span className="text-xs bg-brand-50 text-brand-700 px-2 py-1 rounded">Seat {t.seatNumber + 1}</span>
+                        <span className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded whitespace-nowrap">
+                          Seat {t.seatNumber + 1}
+                        </span>
                       </div>
                     </div>
+
                     {t.event ? (
                       <>
-                        <p className="text-gray-800 font-medium">{t.event.title}</p>
-                        <p className="text-sm text-gray-700">{t.event.date} at {t.event.time}</p>
-                        <p className="text-sm text-gray-700">{t.event.location}</p>
+                        <p className="text-sm sm:text-base text-gray-800 font-medium line-clamp-2">
+                          {t.event.title}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-700 mt-1">
+                          {t.event.date} at {t.event.time}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-700 truncate">
+                          {t.event.location}
+                        </p>
                       </>
                     ) : (
-                      <p className="text-sm text-gray-700">Loading event details...</p>
+                      <p className="text-xs sm:text-sm text-gray-700">Loading event details...</p>
                     )}
-                    <div className="mt-4 text-sm text-gray-500">
+
+                    <div className="mt-3 text-xs sm:text-sm text-gray-500">
                       <p>Event ID: {t.occasionId}</p>
                     </div>
 
                     {/* Refund */}
                     {canRefund(t.event) && (
-                      <div className="mt-3">
+                      <div className="mt-3 sm:mt-4">
                         <button
-                          className="w-full text-sm bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700"
+                          className="w-full text-xs sm:text-sm bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700 font-semibold transition"
                           onClick={async () => {
                             const ok = await refundAttendee(t.tokenId);
                             if (ok) {
                               addToast({ type: 'success', title: 'Refund requested', message: `Refund processed for Ticket #${t.tokenId}.` });
-                              // Reload after a short delay
                               setTimeout(() => {
                                 if (walletAddress) loadTickets(walletAddress);
                               }, 1200);
@@ -295,14 +308,16 @@ export default function MyTicketsPage() {
                         >
                           Request Refund
                         </button>
-                        <p className="text-xs text-gray-500 mt-1">Refunds available when an event is canceled or 48h after the event if not marked occurred.</p>
+                        <p className="text-xs text-gray-500 mt-1.5">
+                          Refunds available when an event is canceled or 48h after the event if not marked occurred.
+                        </p>
                       </div>
                     )}
 
                     {/* View NFT */}
                     <div className="mt-3">
                       <button
-                        className="w-full text-sm btn-brand py-2 rounded"
+                        className="w-full text-xs sm:text-sm btn-brand py-2 rounded font-semibold hover:opacity-90 transition"
                         onClick={() => openNFTImage(t.tokenId)}
                       >
                         View NFT
@@ -310,24 +325,26 @@ export default function MyTicketsPage() {
                     </div>
 
                     {/* Verification QR & Link */}
-                    <div className="mt-4 flex items-start gap-4">
-                      <div className="border rounded p-2 bg-white">
-                        {/* Generate QR without deps using external service */}
+                    <div className="mt-4 flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                      <div className="border rounded p-2 bg-white mx-auto sm:mx-0 flex-shrink-0">
                         {origin && (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             alt={`QR for ticket #${t.tokenId}`}
-                            width={180}
-                            height={180}
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`${origin}/verify?tokenId=${t.tokenId}&eventId=${t.occasionId}`)}`}
+                            width={140}
+                            height={140}
+                            className="sm:w-[160px] sm:h-[160px]"
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`${origin}/verify?tokenId=${t.tokenId}&eventId=${t.occasionId}`)}`}
                           />
                         )}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-700 font-medium mb-1">Verification Link</p>
+                      <div className="flex-1 w-full min-w-0">
+                        <p className="text-xs sm:text-sm text-gray-700 font-medium mb-1.5">
+                          Verification Link
+                        </p>
                         <div className="flex items-center gap-2">
                           <input
-                            className="w-full border rounded px-2 py-1 text-sm"
+                            className="flex-1 min-w-0 border rounded px-2 py-1.5 text-xs sm:text-sm"
                             readOnly
                             value={origin ? `${origin}/verify?tokenId=${t.tokenId}&eventId=${t.occasionId}` : `/verify?tokenId=${t.tokenId}&eventId=${t.occasionId}`}
                           />
@@ -335,13 +352,16 @@ export default function MyTicketsPage() {
                             onClick={() => {
                               const url = origin ? `${origin}/verify?tokenId=${t.tokenId}&eventId=${t.occasionId}` : `/verify?tokenId=${t.tokenId}&eventId=${t.occasionId}`;
                               navigator.clipboard.writeText(url);
+                              addToast({ type: 'success', title: 'Copied!', message: 'Link copied to clipboard' });
                             }}
-                            className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded"
+                            className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded font-medium transition flex-shrink-0"
                           >
                             Copy
                           </button>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Show this QR or link at entry for instant on-chain verification.</p>
+                        <p className="text-xs text-gray-500 mt-1.5">
+                          Show this QR or link at entry for instant on-chain verification.
+                        </p>
                       </div>
                     </div>
                   </div>
