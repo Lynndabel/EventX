@@ -80,7 +80,7 @@ export default function AboutPage() {
                     { title: 'Open the event', description: 'Use a shared link or QR to view details and seats.' },
                     { title: 'Pick a seat & pay', description: 'Confirm in your wallet. Ticket issues instantly.' },
                     { title: 'Access your ticket', description: 'Your digital pass stays available on your phone.' },
-                    { title: 'Scan and enter', description: 'Show QR at the door for instant, verifiable check‑in.' },
+                    { title: 'Scan and enter', description: 'Show QR at the door for instant, verifiable check‑in always.' },
                   ]}
                 />
               </div>
