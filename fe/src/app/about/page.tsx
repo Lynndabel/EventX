@@ -66,7 +66,7 @@ export default function AboutPage() {
                 <h4 className="text-lg font-semibold text-gray-900 mb-3">For Organizers</h4>
                 <HowItWorksSlider
                   slides={[
-                    { title: 'Connect your wallet', description: 'Sign in with MetaMask or your preferred wallet.' },
+                    { title: 'Connect your wallet', description: 'Sign in with your preferred wallet.' },
                     { title: 'Create your event', description: 'Add title, date/time, price, seats, and location.' },
                     { title: 'Set resale rules', description: 'Cap resale prices and protect your brand reputation.' },
                     { title: 'Go live and share', description: 'Share a link or QR. Track sales and check‑ins live.' },
