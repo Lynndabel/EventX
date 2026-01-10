@@ -16,7 +16,7 @@ export default function AboutPage() {
               Secure, transparent event ticketing powered by blockchain
             </p>
             <p className="mt-4 text-lg md:text-xl text-gray-700 drop-shadow">
-              Real tickets only. Fair resale with caps. Instant QR check‑in. Own your access.
+              Real tickets only. Fair resale with caps. Instant QR check‑in. Own your access always.
             </p>
             <div className="accent-bar" />
           </div>
