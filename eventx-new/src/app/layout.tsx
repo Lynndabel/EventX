@@ -6,7 +6,7 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'EventX - Decentralized Event Ticketing',
+  title: 'EventX - Decentralized Event Ticketing Platform',
   description: 'Buy, sell, and trade event tickets on the blockchain',
 }
 
