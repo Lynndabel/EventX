@@ -3,8 +3,6 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
-import { useBlockchainIntegration } from '@/hooks/useBlockchainIntegration';
 import { Event } from '@/types/contract';
 import WalletConnect from '@/components/WalletConnect';
 import { addToast } from '@/lib/toast';
