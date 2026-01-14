@@ -107,7 +107,7 @@ export default function AboutPage() {
                 href="/events" 
                 className="inline-block bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
               >
-                Explore Events
+                Explore Events Now
               </Link>
             </div>
           </div>
