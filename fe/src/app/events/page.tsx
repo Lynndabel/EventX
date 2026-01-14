@@ -12,6 +12,8 @@ import { addToast } from '@/lib/toast';
 // Events page is read-only for events listing and ticket purchase
 
 // Start with empty events; events will be added after on-chain creation
+
+// This is mock
 const mockEvents: Event[] = [];
 
 export default function EventsPage() {
